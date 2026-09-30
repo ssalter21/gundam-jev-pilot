@@ -35,7 +35,7 @@ Do: deploy a unit every turn, prioritising the cheapest units first so no resour
 
 ### close_the_game
 When: the opponent has 2 or fewer shields and no base, or any time a set of attacks this turn can remove all shields and then hit them.
-Do: send everything at the opponent directly. Use Hawk of Endymion on their Blocker first. Ignore trades and card advantage.
+Do: send everything at the opponent directly. Ignore trades and card advantage.
 
 ## Rules
 - Always take an attack option that says it wins the game.
