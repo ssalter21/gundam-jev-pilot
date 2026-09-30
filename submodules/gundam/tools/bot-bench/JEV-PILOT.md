@@ -56,11 +56,20 @@ that folder. Sanity check first:
 pnpm jev:check      # expect: identical games: 20/20
 ```
 
-## Write decks in the studio (web UI)
+## Play in the browser (studio)
 
 ```sh
 pnpm jev:studio      # then open http://localhost:4747
 ```
+
+- **My decks → + New**: a name and a 50-card list, nothing else. Saved to `my-decks/` (git-ignored).
+- **▶ Play**: pick your deck (yours or a built-in one) and a meta deck, optionally show the bot's plan,
+  and press Start. Click a move or press 1-9; hover cards for full text. At the end: play again,
+  rematch with the same shuffle, and "what the bot was thinking" (the same review as `jev:play`).
+- The studio reads `TYPESAFE_API_KEY` when it starts. Without it the Play screen says you're in
+  practice mode (the built-in bot).
+
+## Write meta decks in the studio
 
 - **New meta deck**: name it, pick a playstyle (Aggro / Midrange / Control), paste the 50 cards as
   `4x GD05-111` lines. The list is checked as you type: card names, 50 cards, max 4 copies,
@@ -122,6 +131,7 @@ Workflow that works well:
 - `src/jev/deck-notes.ts`: reads the deck `.md` files
 - `src/jev/guides.ts`: reads `jev-guides/*.md` (how-to-play + playstyle guides and their default plans)
 - `src/jev/deck-form.ts`: studio form ⇄ deck Markdown, decklist check against the card database
+- `src/jev/play-session.ts`: one human-vs-Jev game a UI can drive (waits for `choose()`), plus the review builder
 - `scripts/jev-studio.ts` + `studio/index.html`: the web UI (`pnpm jev:studio`)
 - `src/jev/describe.ts`: board and moves to plain English, all maths done here
 - `src/jev/client.ts`: Jev HTTP client (`POST /v1/systemone`) and the offline mock

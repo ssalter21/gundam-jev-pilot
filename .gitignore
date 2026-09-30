@@ -26,3 +26,7 @@ playwright-report/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Personal decks saved from the studio (kept out of the public repo)
+submodules/gundam/tools/bot-bench/my-decks/
+submodules/gundam/tools/bot-bench/reports/last-game.md

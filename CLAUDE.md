@@ -21,7 +21,11 @@ This repo is a sparse clone of TheCardGoat/tcg-engines (MIT). Only `submodules/g
     `## Game plans` is sent to Jev as `game_guide` / `playstyle_guide`; `###` plans below are defaults.
   - `src/jev/deck-form.ts` — studio form ⇄ Markdown (`markdownToForm`/`formToMarkdown`), `checkDecklist`
     (card catalog lookup, 50 cards, ≤4 copies, ≤2 colours)
-  - `scripts/jev-studio.ts` + `studio/index.html` — local web UI (`pnpm jev:studio`, 127.0.0.1:4747), vanilla JS, no build
+  - `src/jev/play-session.ts` — `PlaySession`: runs `playAsyncMatch` in the background; the human seat publishes
+    board/options and waits for `choose(i)`/`concede()`. `buildReview` is shared with `jev-play.ts`.
+  - `scripts/jev-studio.ts` + `studio/index.html` — local web UI (`pnpm jev:studio`, 127.0.0.1:4747), vanilla JS,
+    no build. Play screen (the landing page), My decks (`my-decks/*.md`, name + decklist, git-ignored), meta decks,
+    guides. Games live in server memory; the page polls `/api/games/:id` while the bot thinks.
   - `src/jev/describe.ts` — engine state and legal moves → plain English. All arithmetic lives here
     (effective AP/HP via `combatUnitValue`, attack results via `combatOutcome`), because Jev is weak
     at maths/counting. `describeEvent` gives perspective-neutral history lines.
@@ -38,7 +42,7 @@ This repo is a sparse clone of TheCardGoat/tcg-engines (MIT). Only `submodules/g
 
 ## Commands (run in `submodules/gundam/tools/bot-bench`)
 
-- `pnpm jev:studio` — deck/guide editor at http://localhost:4747
+- `pnpm jev:studio` — play in the browser + deck/guide editor at http://localhost:4747
 - `pnpm jev:check` — must print `identical games: 20/20`. Run after any change to describe/pilot/loop.
 - `pnpm jev:bench --deck jev-decks/nu-gundam.md --vs combat-aware --vs-deck gd01-mixed --matches 10 [--mock] [--verbose] [--dump reports/req.jsonl]`
 - `pnpm jev:play --opponent jev-decks/nu-gundam.md --my-deck gd01-mixed [--show-plan] [--seed x]`

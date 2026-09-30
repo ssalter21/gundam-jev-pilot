@@ -1,14 +1,19 @@
 /**
- * Jev studio: a local web UI for writing meta deck files and editing the guides.
+ * Jev studio: a local web UI to store your decks, write meta deck files, edit the guides,
+ * and play against a meta deck in the browser.
  *
  *   pnpm jev:studio [--port 4747]
  *
  * Serves studio/index.html and a small JSON API on 127.0.0.1 only. Reads and writes
- * jev-decks/*.md and jev-guides/*.md; those Markdown files stay the source of truth.
+ * my-decks/*.md (name + decklist), jev-decks/*.md and jev-guides/*.md; those Markdown files
+ * stay the source of truth.
  */
 
-import { existsSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+
+import type { DeckList } from "@tcg/gundam-engine";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -17,7 +22,9 @@ import {
   markdownToForm,
   type DeckForm,
 } from "../src/jev/deck-form.ts";
-import { loadDeckNotes } from "../src/jev/deck-notes.ts";
+import { loadDeckNotes, parseDeckNotes } from "../src/jev/deck-notes.ts";
+import { PlaySession } from "../src/jev/play-session.ts";
+import { REGISTERED_DECKS, type BenchDeckId } from "../src/runtime.ts";
 import {
   GUIDE_IDS,
   isGuideId,
@@ -26,10 +33,12 @@ import {
   readGuideMarkdown,
   writeGuideMarkdown,
 } from "../src/jev/guides.ts";
-import { parseArgs } from "../src/jev/setup.ts";
+import { makeClient, parseArgs } from "../src/jev/setup.ts";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const DECKS_DIR = `${ROOT}jev-decks/`;
+const MY_DECKS_DIR = `${ROOT}my-decks/`;
+mkdirSync(MY_DECKS_DIR, { recursive: true });
 const PAGE = `${ROOT}studio/index.html`;
 const FILE_RE = /^[a-z0-9][a-z0-9_-]*\.md$/;
 const HIDDEN = new Set(["TEMPLATE.md"]);
@@ -76,7 +85,72 @@ function listDecks() {
     });
 }
 
-function slugFor(name: string): string {
+function listMyDecks() {
+  return readdirSync(MY_DECKS_DIR)
+    .filter((f) => f.endsWith(".md"))
+    .sort()
+    .map((file) => {
+      const form = markdownToForm(readFileSync(`${MY_DECKS_DIR}${file}`, "utf8"));
+      const check = checkDecklist(form.decklist);
+      return { file, name: form.name || file, ready: check.errors.length === 0, total: check.total };
+    });
+}
+
+/** A saved personal deck: just a name and a decklist. */
+function myDeckForm(input: Partial<DeckForm>): DeckForm {
+  return {
+    name: String(input.name ?? ""),
+    playstyle: "",
+    decklist: String(input.decklist ?? ""),
+    overview: "",
+    keyPlays: [],
+    plans: [],
+    rules: [],
+    cardNotes: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Games
+
+const games = new Map<string, PlaySession>();
+
+function startGame(input: { myDeck?: string; metaDeck?: string; showPlan?: boolean; seed?: string }) {
+  const myArg = String(input.myDeck ?? "");
+  let me: { name: string; deck: DeckList };
+  if (myArg.startsWith("builtin:")) {
+    const id = myArg.slice("builtin:".length) as BenchDeckId;
+    const deck = REGISTERED_DECKS[id];
+    if (!deck) throw new HttpError(400, `Unknown built-in deck "${id}".`);
+    me = { name: `${id} (built-in)`, deck };
+  } else {
+    const file = deckFile(myArg);
+    const path = `${MY_DECKS_DIR}${file}`;
+    if (!existsSync(path)) throw new HttpError(404, "Pick one of your decks.");
+    const problems = checkDecklist(markdownToForm(readFileSync(path, "utf8")).decklist).errors;
+    if (problems.length) throw new HttpError(400, `Your deck isn't legal yet: ${problems.join(" ")}`);
+    const notes = parseDeckNotes(readFileSync(path, "utf8"), file, { requirePlans: false });
+    me = { name: notes.name, deck: notes.deck };
+  }
+
+  const metaFile = deckFile(String(input.metaDeck ?? ""));
+  let meta;
+  try {
+    meta = loadDeckNotes(`${DECKS_DIR}${metaFile}`);
+  } catch (err) {
+    throw new HttpError(400, err instanceof Error ? err.message : String(err));
+  }
+
+  const seed = input.seed ? String(input.seed) : `studio-${Date.now()}`;
+  const session = new PlaySession(randomUUID(), me, meta, makeClient({}), seed, input.showPlan === true);
+  // Keep only a handful of games around.
+  for (const [id, g] of games) if (games.size >= 5 && g.snapshot().status === "over") games.delete(id);
+  games.set(session.id, session);
+  session.start();
+  return session;
+}
+
+function slugFor(name: string, dir = DECKS_DIR): string {
   const base =
     name
       .toLowerCase()
@@ -84,7 +158,7 @@ function slugFor(name: string): string {
       .replace(/^-+|-+$/g, "")
       .slice(0, 48) || "deck";
   let file = `${base}.md`;
-  for (let i = 2; existsSync(`${DECKS_DIR}${file}`) || HIDDEN.has(file); i++) file = `${base}-${i}.md`;
+  for (let i = 2; existsSync(`${dir}${file}`) || HIDDEN.has(file); i++) file = `${base}-${i}.md`;
   return file;
 }
 
@@ -147,6 +221,8 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     return send(res, 200, {
       guides: GUIDE_IDS.map((id) => ({ id, title: loadGuide(id).title })),
       playstyles,
+      builtinDecks: Object.keys(REGISTERED_DECKS),
+      jev: process.env.TYPESAFE_API_KEY ? "real" : "mock",
     });
   }
 
@@ -184,6 +260,59 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     if (method === "DELETE") {
       if (existsSync(full)) unlinkSync(full);
       return send(res, 200, { ok: true });
+    }
+  }
+
+  // My decks (name + decklist only)
+  if (method === "GET" && path === "/api/my-decks") return send(res, 200, listMyDecks());
+  if (method === "POST" && path === "/api/my-decks") {
+    const form = myDeckForm((await body(req)) as Partial<DeckForm>);
+    const file = slugFor(form.name, MY_DECKS_DIR);
+    writeFileSync(`${MY_DECKS_DIR}${file}`, formToMarkdown(form));
+    return send(res, 201, { file, form, check: checkDecklist(form.decklist) });
+  }
+  const myMatch = /^\/api\/my-decks\/([^/]+)$/.exec(path);
+  if (myMatch) {
+    const file = deckFile(myMatch[1]!);
+    const full = `${MY_DECKS_DIR}${file}`;
+    if (method === "GET") {
+      if (!existsSync(full)) throw new HttpError(404, "No such deck");
+      const form = markdownToForm(readFileSync(full, "utf8"));
+      return send(res, 200, { file, form, check: checkDecklist(form.decklist) });
+    }
+    if (method === "PUT") {
+      const form = myDeckForm((await body(req)) as Partial<DeckForm>);
+      writeFileSync(full, formToMarkdown(form));
+      return send(res, 200, { file, form, check: checkDecklist(form.decklist) });
+    }
+    if (method === "DELETE") {
+      if (existsSync(full)) unlinkSync(full);
+      return send(res, 200, { ok: true });
+    }
+  }
+
+  // Games
+  if (method === "POST" && path === "/api/games") {
+    const session = startGame((await body(req)) as Parameters<typeof startGame>[0]);
+    return send(res, 201, session.snapshot());
+  }
+  const gameMatch = /^\/api\/games\/([^/]+)(\/move|\/concede)?$/.exec(path);
+  if (gameMatch) {
+    const session = games.get(gameMatch[1]!);
+    if (!session) throw new HttpError(404, "That game has ended or the studio was restarted.");
+    if (method === "GET" && !gameMatch[2]) return send(res, 200, session.snapshot());
+    if (method === "POST" && gameMatch[2] === "/move") {
+      const { option } = (await body(req)) as { option?: number };
+      try {
+        session.choose(Number(option));
+      } catch (err) {
+        throw new HttpError(409, err instanceof Error ? err.message : String(err));
+      }
+      return send(res, 200, session.snapshot());
+    }
+    if (method === "POST" && gameMatch[2] === "/concede") {
+      session.concede();
+      return send(res, 200, session.snapshot());
     }
   }
 

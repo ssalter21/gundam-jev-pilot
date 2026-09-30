@@ -24,6 +24,7 @@ import { buildBenchRuntime, PLAYER_ONE, PLAYER_TWO } from "../src/runtime.ts";
 import { playAsyncMatch, type Seat } from "../src/jev/async-match.ts";
 import { describeBoard, describeCandidate, type BoardFacts } from "../src/jev/describe.ts";
 import { JevPilot, type PilotDecisionLog } from "../src/jev/pilot.ts";
+import { buildReview } from "../src/jev/play-session.ts";
 import { makeClient, parseArgs, resolveDeck, resolveStrategy } from "../src/jev/setup.ts";
 
 const args = parseArgs(process.argv.slice(2));
@@ -180,28 +181,7 @@ const youWon = result.winner === String(HUMAN);
 console.log(`\n${youWon ? "YOU WIN" : result.winner ? "BOT WINS" : "Game ended"} · turn ${result.turns} · ${result.winReason ?? result.termination}`);
 
 // Post-game review
-const review: string[] = [
-  `# Game review: you (${me.deck.name}) vs ${bot.notes.name}`,
-  "",
-  `Result: ${youWon ? "you won" : result.winner ? "bot won" : "no winner"} on turn ${result.turns} (${result.winReason ?? result.termination}). Seed: \`${seed}\``,
-  "",
-  "## What the bot was planning",
-  ...pilot.planHistory.map(
-    (p) => `- Turn ${p.turn}: **${p.plan}** (${(p.confidence * 100).toFixed(0)}%) · ${Object.entries(p.probabilities).map(([k, v]) => `${k} ${(v * 100).toFixed(0)}%`).join(", ")}`,
-  ),
-  "",
-  "## Its closest calls (lowest confidence)",
-  ...[...decisions]
-    .sort((a, b) => a.confidence - b.confidence)
-    .slice(0, 8)
-    .map(
-      (d) =>
-        `- Turn ${d.turn} [${d.plan}] chose: ${d.chosen} (${(d.confidence * 100).toFixed(0)}%)\n` +
-        d.alternatives.map((a) => `  - vs ${a.action} (${(a.p * 100).toFixed(0)}%)`).join("\n"),
-    ),
-  "",
-  `Jev calls: ${pilot.stats.jevCalls}, fallbacks to the built-in bot: ${pilot.stats.fallbacks}${pilot.stats.lastError ? ` (last error: ${pilot.stats.lastError})` : ""}`,
-];
+const review = buildReview({ myDeck: me.deck.name, metaDeck: bot.notes.name, seed, result, pilot, decisions });
 mkdirSync("reports", { recursive: true });
-writeFileSync("reports/last-game.md", review.join("\n"));
-console.log(`\n${review.slice(4).join("\n")}\n\nSaved to reports/last-game.md`);
+writeFileSync("reports/last-game.md", review);
+console.log(`\n${review.split("\n").slice(4).join("\n")}\n\nSaved to reports/last-game.md`);

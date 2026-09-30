@@ -44,11 +44,22 @@ To use real Jev, get a key from https://console.typesafe.ai and set `TYPESAFE_AP
 everything runs against a mock that copies the built-in `combat-aware` bot, which is useful for
 checking your setup.
 
-## Write a deck in the studio
+## Play in the browser
 
 ```bash
 corepack pnpm jev:studio       # open http://localhost:4747
 ```
+
+1. **My decks → + New**: name it and paste your 50 cards (`4x GD05-111`). No notes needed.
+2. **▶ Play**: pick your deck (or a built-in one), pick the meta deck to face, press **Start game**.
+3. Click a move (or press 1-9). Hover any card to see it full size with its text. Afterwards you can
+   rematch with the same shuffle and see what the bot was thinking.
+
+Your own decks are saved in `submodules/gundam/tools/bot-bench/my-decks/`, which is kept out of git.
+
+## Write a meta deck in the studio
+
+In the same studio, **Meta decks → + New**:
 
 - Paste the 50 cards in standard notation (`4x GD05-111`). The list is checked as you type: card
   names, exactly 50 cards, at most 4 copies, at most 2 colours.
@@ -60,7 +71,7 @@ Decks are saved as Markdown in `submodules/gundam/tools/bot-bench/jev-decks/`, a
 by hand too. See [`TEMPLATE.md`](submodules/gundam/tools/bot-bench/jev-decks/TEMPLATE.md) and the
 example deck [`nu-gundam.md`](submodules/gundam/tools/bot-bench/jev-decks/nu-gundam.md).
 
-## Play against it
+## Play in the terminal
 
 ```bash
 corepack pnpm jev:play --opponent jev-decks/nu-gundam.md --my-deck gd01-mixed --show-plan
@@ -91,7 +102,8 @@ is in `submodules/gundam/tools/bot-bench/`:
 | `jev-guides/` | How-to-play guide and Aggro / Midrange / Control guides |
 | `src/jev/` | Deck parser, plain-English describer, Jev client, pilot, match loop |
 | `scripts/jev-*.ts` | `jev:play`, `jev:bench`, `jev:check`, `jev:studio` |
-| `studio/index.html` | The studio's web page |
+| `studio/index.html` | The studio's web page (play, my decks, meta decks, guides) |
+| `my-decks/` | Your own decks saved from the studio (git-ignored) |
 
 ## Status
 
