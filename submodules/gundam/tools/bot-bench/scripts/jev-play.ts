@@ -3,7 +3,7 @@
  * Play a game against the Jev pilot in your terminal.
  *
  *   node --experimental-transform-types --no-warnings scripts/jev-play.ts \
- *     --opponent jev-decks/seed-aggro.md \
+ *     --opponent jev-decks/nu-gundam.md \
  *     --my-deck my-deck.txt            (or a bench deck id like gd01-mixed, or a .md)
  *     [--seed anything] [--mock] [--show-plan]
  *

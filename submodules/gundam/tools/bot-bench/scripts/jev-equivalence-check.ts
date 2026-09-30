@@ -5,7 +5,7 @@ import { JevPilot } from "../src/jev/pilot.ts";
 import { MockJevClient } from "../src/jev/client.ts";
 import { loadDeckNotes } from "../src/jev/deck-notes.ts";
 import { resolveDeck, resolveStrategy } from "../src/jev/setup.ts";
-const notes = loadDeckNotes("jev-decks/seed-aggro.md");
+const notes = loadDeckNotes("jev-decks/nu-gundam.md");
 const opp = resolveDeck("gd01-mixed").deck;
 const ca = resolveStrategy("combat-aware"), st = resolveStrategy("strategic");
 let same = 0, diff = 0;

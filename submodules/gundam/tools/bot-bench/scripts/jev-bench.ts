@@ -3,7 +3,7 @@
  * Jev pilot vs a built-in bot, N games, seats alternating.
  *
  *   node --experimental-transform-types --no-warnings scripts/jev-bench.ts \
- *     --deck jev-decks/seed-aggro.md \
+ *     --deck jev-decks/nu-gundam.md \
  *     --vs combat-aware --vs-deck gd01-mixed \
  *     --matches 10 [--mock] [--dump reports/jev-requests.jsonl] [--verbose]
  *

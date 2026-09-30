@@ -78,7 +78,7 @@ by hand works too.
 ## Play against it
 
 ```sh
-pnpm jev:play --opponent jev-decks/seed-aggro.md --my-deck my-deck.txt
+pnpm jev:play --opponent jev-decks/nu-gundam.md --my-deck my-deck.txt
 ```
 
 - `--my-deck` takes a plain decklist file (`4 GD01-008` per line, 50 cards), a deck-notes `.md`,
@@ -92,7 +92,7 @@ pnpm jev:play --opponent jev-decks/seed-aggro.md --my-deck my-deck.txt
 ## Test a deck file against the built-in bots
 
 ```sh
-pnpm jev:bench --deck jev-decks/seed-aggro.md --vs combat-aware --vs-deck gd01-mixed --matches 10 --verbose
+pnpm jev:bench --deck jev-decks/nu-gundam.md --vs combat-aware --vs-deck gd01-mixed --matches 10 --verbose
 ```
 
 - `--vs`: `strategic`, `combat-aware`, `tempo`, `value-ranked`, `greedy-legal`, …
@@ -107,7 +107,7 @@ should get the Jev pilot at or above `combat-aware`.
 
 ## Writing a meta deck file
 
-Use the studio, or copy `jev-decks/TEMPLATE.md`. `jev-decks/seed-aggro.md` is a worked example. The quality of the
+Use the studio, or copy `jev-decks/TEMPLATE.md`. `jev-decks/nu-gundam.md` is an example. The quality of the
 opponent comes almost entirely from the plans and rules: write them as conditions and priorities,
 the way you'd coach a newer player on the deck.
 

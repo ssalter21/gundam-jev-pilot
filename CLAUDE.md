@@ -33,15 +33,15 @@ This repo is a sparse clone of TheCardGoat/tcg-engines (MIT). Only `submodules/g
     engine's synchronous `takeAutomatedActionWithFallback` (candidates matched by `candidateKey`)
   - `scripts/jev-play.ts` (terminal human vs bot), `scripts/jev-bench.ts` (bot vs built-in bots),
     `scripts/jev-equivalence-check.ts` (plumbing test)
-  - `jev-decks/` — `TEMPLATE.md`, `seed-aggro.md` example
+  - `jev-decks/` — `TEMPLATE.md`, `nu-gundam.md` (Nu Gundam aggro)
   - `jev-guides/` — how-to-play and playstyle guides
 
 ## Commands (run in `submodules/gundam/tools/bot-bench`)
 
 - `pnpm jev:studio` — deck/guide editor at http://localhost:4747
 - `pnpm jev:check` — must print `identical games: 20/20`. Run after any change to describe/pilot/loop.
-- `pnpm jev:bench --deck jev-decks/seed-aggro.md --vs combat-aware --vs-deck gd01-mixed --matches 10 [--mock] [--verbose] [--dump reports/req.jsonl]`
-- `pnpm jev:play --opponent jev-decks/seed-aggro.md --my-deck gd01-mixed [--show-plan] [--seed x]`
+- `pnpm jev:bench --deck jev-decks/nu-gundam.md --vs combat-aware --vs-deck gd01-mixed --matches 10 [--mock] [--verbose] [--dump reports/req.jsonl]`
+- `pnpm jev:play --opponent jev-decks/nu-gundam.md --my-deck gd01-mixed [--show-plan] [--seed x]`
 - `pnpm bench -- --p1 strategic --p2 combat-aware ...` — upstream bench for built-in bots
 - Typecheck: `..\..\node_modules\.bin\tsc --noEmit -p tsconfig.json` (2 pre-existing errors in
   `agnostic-simulator` are upstream and expected; there should be none in `src/jev` or `scripts/jev-*`)

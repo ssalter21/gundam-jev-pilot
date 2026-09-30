@@ -58,12 +58,12 @@ corepack pnpm jev:studio       # open http://localhost:4747
 
 Decks are saved as Markdown in `submodules/gundam/tools/bot-bench/jev-decks/`, and you can edit them
 by hand too. See [`TEMPLATE.md`](submodules/gundam/tools/bot-bench/jev-decks/TEMPLATE.md) and the
-worked example [`seed-aggro.md`](submodules/gundam/tools/bot-bench/jev-decks/seed-aggro.md).
+example deck [`nu-gundam.md`](submodules/gundam/tools/bot-bench/jev-decks/nu-gundam.md).
 
 ## Play against it
 
 ```bash
-corepack pnpm jev:play --opponent jev-decks/seed-aggro.md --my-deck gd01-mixed --show-plan
+corepack pnpm jev:play --opponent jev-decks/nu-gundam.md --my-deck gd01-mixed --show-plan
 ```
 
 - `--my-deck` takes a decklist file, a deck `.md` file, or a built-in deck id.
@@ -74,7 +74,7 @@ corepack pnpm jev:play --opponent jev-decks/seed-aggro.md --my-deck gd01-mixed -
 To test a deck against the built-in bots:
 
 ```bash
-corepack pnpm jev:bench --deck jev-decks/seed-aggro.md --vs combat-aware --vs-deck gd01-mixed --matches 10 --verbose
+corepack pnpm jev:bench --deck jev-decks/nu-gundam.md --vs combat-aware --vs-deck gd01-mixed --matches 10 --verbose
 ```
 
 [JEV-PILOT.md](submodules/gundam/tools/bot-bench/JEV-PILOT.md) has the full options and tips for
