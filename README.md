@@ -1,80 +1,103 @@
-# TCG Engines
+# Gundam Jev Pilot
 
-This repository contains the open-source engine and simulator workspaces used by
-TCG Online. It includes game rules, card definitions, adapters, shared simulator
-contracts, and test tooling for the public parts of the project.
+A practice opponent for the [Gundam Card Game](https://www.gundam-gcg.com/) that plays a meta deck
+the way you describe it in plain English.
 
-The production web app, API, gateway, reverse proxy, workers, auth, matchmaking
-services, infrastructure, and deployment configuration are private and are not
-included here.
+You write the deck's list, strategy, key plays and card notes. A rules engine handles every rule and
+card effect. For each decision, Jev (TypeSafe's System One model) picks one of the engine's legal
+moves, guided by your notes and a set of gameplay guides.
 
-## Workspaces
+> Built on [TheCardGoat/tcg-engines](https://github.com/TheCardGoat/tcg-engines) (MIT). Their
+> original README is in [UPSTREAM-README.md](UPSTREAM-README.md). This is a personal project and is
+> not affiliated with Bandai or TCG Online.
 
-- `submodules/agnostic-simulator` - shared protocol, simulator contracts,
-  runtime adapters, simulator UI primitives, and agent tooling.
-- `submodules/lorcana` - Lorcana engine, cards, simulator, replay tooling, and
-  tests.
-- `submodules/cyberpunk` - Cyberpunk cards, engine, parser/scraper tooling, and
-  server adapter.
-- `submodules/flesh-and-blood` - Flesh and Blood catalog types, cards, rules
-  engine runtime, and ingestion tooling.
-- `submodules/grand-archive` - Grand Archive catalog types, cards, rules
-  engine runtime, and ingestion tooling.
-- `submodules/gundam` - Gundam engine, cards, simulator, tooling, and server
-  adapter.
-- `submodules/naruto` - Naruto cards, provisional rules engine, and tests.
-- `submodules/one-piece` - One Piece simulator, engine, cards, types,
-  and utilities.
-- `submodules/riftbound` - Riftbound catalog types, cards, and ingestion
-  tooling.
+## How it works
 
-## Simulator Support
+- **The engine** decides what's legal and resolves everything. The bot can only pick from moves the
+  engine offers.
+- **The board and each move are described in plain English**, with every number already worked out.
+  For example, "Attack enemy Loto (AP 3, HP 2 left) with Strike (AP 4, HP 3 left): enemy is destroyed,
+  mine survives".
+- **Game plans give it memory.** At the start of each of its turns, the bot picks which of the deck's
+  plans applies ("When: … Do: …") and follows it until its next turn.
+- **Guides** give it general knowledge: a how-to-play guide for every deck, plus an Aggro, Midrange or
+  Control guide depending on the deck's playstyle.
+- **It never sees hidden information**, such as your hand or deck order.
+- **If a Jev call fails**, that one decision falls back to the engine's built-in `combat-aware` bot.
 
-- **Supported:** Lorcana, Cyberpunk, Gundam, Naruto (provisional preview
-  rules), One Piece, and — newly added — Flesh and Blood.
-- **Not yet implemented:** Grand Archive, Riftbound, and Star Wars
-  Unlimited. Their engine and card workspaces ship in this repository
-  first, and their simulators are still in development.
+## Quick start
 
-## Requirements
-
-- Node.js 24.x
-- pnpm 10.33.x
-- Bun, for packages that use Bun-powered scripts
-- Vite+ (`vp`), installed by the package manager in each workspace
-
-## Setup
-
-Each exported subdirectory is its own pnpm workspace. Install dependencies from
-the workspace you are changing:
+Needs Node 22.18+ and pnpm 10.33 through corepack. From the repo root:
 
 ```bash
-pnpm --dir submodules/cyberpunk install --frozen-lockfile
-pnpm --dir submodules/agnostic-simulator install --frozen-lockfile
+corepack prepare pnpm@10.33.0 --activate
+cd submodules/gundam
+CI=1 corepack pnpm install --frozen-lockfile
+cd tools/bot-bench
+corepack pnpm jev:check        # plumbing test: expect "identical games: 20/20"
 ```
 
-For cross-game simulator work, install and build game workspaces before running
-the agnostic simulator checks.
+In PowerShell, set `$env:CI = "1"` before the install instead of prefixing the command with `CI=1`.
+If `corepack enable` works on your machine, you can type `pnpm` in place of `corepack pnpm`.
 
-## Validation
+To use real Jev, get a key from https://console.typesafe.ai and set `TYPESAFE_API_KEY`. Without a key,
+everything runs against a mock that copies the built-in `combat-aware` bot, which is useful for
+checking your setup.
 
-The root package provides convenience wrappers:
+## Write a deck in the studio
 
 ```bash
-pnpm run ci:cyberpunk:check
-pnpm run ci:gundam:check
-pnpm run ci:lorcana:check
-pnpm run ci:one-piece:check
-pnpm run ci:agnostic:check
-pnpm run ci:public
+corepack pnpm jev:studio       # open http://localhost:4747
 ```
 
-Run the focused workspace check first. Broader checks are useful before opening
-or merging a public PR.
+- Paste the 50 cards in standard notation (`4x GD05-111`). The list is checked as you type: card
+  names, exactly 50 cards, at most 4 copies, at most 2 colours.
+- Pick a playstyle and write the overall strategy, key plays, rules and per-card notes.
+- Game plans are optional. Without them, the deck uses its playstyle's default plans.
+- Edit the how-to-play and playstyle guides.
 
-## Contributions
+Decks are saved as Markdown in `submodules/gundam/tools/bot-bench/jev-decks/`, and you can edit them
+by hand too. See [`TEMPLATE.md`](submodules/gundam/tools/bot-bench/jev-decks/TEMPLATE.md) and the
+worked example [`seed-aggro.md`](submodules/gundam/tools/bot-bench/jev-decks/seed-aggro.md).
 
-Public contributions should target engines, cards, rules, adapters, shared
-simulator contracts, tests, and developer tooling in the exported workspaces.
-Production service, account, deployment, and infrastructure changes are out of
-scope for this repository.
+## Play against it
+
+```bash
+corepack pnpm jev:play --opponent jev-decks/seed-aggro.md --my-deck gd01-mixed --show-plan
+```
+
+- `--my-deck` takes a decklist file, a deck `.md` file, or a built-in deck id.
+- To play, type the number of the move you want.
+- `--show-plan` prints the bot's plan at the start of each of its turns.
+- After the game, `reports/last-game.md` shows the bot's plans and its closest decisions.
+
+To test a deck against the built-in bots:
+
+```bash
+corepack pnpm jev:bench --deck jev-decks/seed-aggro.md --vs combat-aware --vs-deck gd01-mixed --matches 10 --verbose
+```
+
+[JEV-PILOT.md](submodules/gundam/tools/bot-bench/JEV-PILOT.md) has the full options and tips for
+writing decks that play well.
+
+## Repo layout
+
+Only the Gundam workspace and the shared simulator are included. Everything added by this project
+is in `submodules/gundam/tools/bot-bench/`:
+
+| Path | What it is |
+| --- | --- |
+| `jev-decks/` | Meta deck files (Markdown) |
+| `jev-guides/` | How-to-play guide and Aggro / Midrange / Control guides |
+| `src/jev/` | Deck parser, plain-English describer, Jev client, pilot, match loop |
+| `scripts/jev-*.ts` | `jev:play`, `jev:bench`, `jev:check`, `jev:studio` |
+| `studio/index.html` | The studio's web page |
+
+## Status
+
+Everything works end to end against the mock, including full games and the studio. It has not yet
+been tuned against real Jev.
+
+## License
+
+MIT, same as the upstream project. See [LICENSE](LICENSE).
