@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev Studio</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f1f3f6; --border: #dde1e7; --text: #1b1f24;
+  --muted: #5f6b7a; --accent: #2f5bd3; --accent-text: #ffffff; --ok: #1f8a4c; --bad: #c43d3d;
+  --warn: #a86a00; --chip: #e8ecf3;
+  --c-blue: #2f6fe0; --c-green: #2f9a55; --c-red: #d9433c; --c-white: #b8bfc9; --c-purple: #8a4fd1;
+  --radius: 10px; --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418; --panel: #191d23; --panel-2: #20252d; --border: #2d333c; --text: #e6e9ee;
+    --muted: #97a1ae; --accent: #6e93ff; --accent-text: #0d1117; --ok: #45c07a; --bad: #ff6b6b;
+    --warn: #e0a53a; --chip: #262c35; --c-white: #d6dbe2;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+button, input, textarea, select { font: inherit; color: inherit; }
+.app { display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+aside { background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto; padding: 16px 12px; }
+aside h1 { font-size: 16px; margin: 0 4px 16px; letter-spacing: .2px; }
+aside h1 small { color: var(--muted); font-weight: 400; }
+aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 6px 6px; }
+.nav-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: 0; background: none; border-radius: 7px; text-align: left; cursor: pointer; }
+.nav-item:hover { background: var(--panel-2); }
+.nav-item.active { background: var(--chip); font-weight: 600; }
+.nav-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--bad); }
+.dot.ok { background: var(--ok); }
+.tag { font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--chip); color: var(--muted); flex: none; }
+main { overflow-y: auto; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 20px 24px 80px; }
+.topbar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 14px 0 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+.topbar .name { flex: 1 1 280px; font-size: 20px; font-weight: 650; border: 1px solid transparent; background: transparent; padding: 4px 8px; border-radius: 8px; min-width: 0; }
+.topbar .name:hover, .topbar .name:focus { border-color: var(--border); background: var(--panel); outline: none; }
+.btn { border: 1px solid var(--border); background: var(--panel); padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+.btn:hover { background: var(--panel-2); }
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.btn.primary:disabled { opacity: .5; cursor: default; }
+.btn.danger { color: var(--bad); }
+.btn.small { padding: 3px 10px; font-size: 13px; }
+.status { font-size: 13px; padding: 4px 10px; border-radius: 99px; background: var(--chip); }
+.status.ok { color: var(--ok); } .status.bad { color: var(--bad); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.seg button { border: 0; background: none; padding: 6px 12px; cursor: pointer; border-right: 1px solid var(--border); }
+.seg button:last-child { border-right: 0; }
+.seg button.on { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+section.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 16px; }
+section.card h3 { margin: 0 0 2px; font-size: 15px; }
+.hint { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+textarea, input[type=text] { width: 100%; border: 1px solid var(--border); background: var(--panel-2); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+textarea:focus, input[type=text]:focus { outline: 2px solid color-mix(in srgb, var(--accent) 50%, transparent); border-color: var(--accent); }
+textarea.mono { font-family: var(--mono); font-size: 13px; }
+.grid2 { display: grid; grid-template-columns: minmax(220px, 320px) 1fr; gap: 16px; }
+.deckcount { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.deckcount strong { font-size: 18px; }
+.deckcount .ok { color: var(--ok); } .deckcount .bad { color: var(--bad); }
+.colorchip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--chip); text-transform: capitalize; }
+.cdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; border: 1px solid rgba(0,0,0,.15); }
+.typegroup h4 { margin: 10px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.cardrow { display: grid; grid-template-columns: 28px 12px 1fr auto; gap: 8px; align-items: center; padding: 3px 6px; border-radius: 6px; cursor: default; }
+.cardrow:hover { background: var(--panel-2); }
+.cardrow .n { font-weight: 650; text-align: right; }
+.cardrow .meta { color: var(--muted); font-size: 12px; font-family: var(--mono); white-space: nowrap; }
+.cardrow .num { color: var(--muted); font-size: 12px; margin-left: 6px; }
+.cardrow.unknown .nm { color: var(--bad); }
+.msgs { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; }
+.msgs li { padding: 2px 0; }
+.msgs .e { color: var(--bad); } .msgs .w { color: var(--warn); }
+.plan { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: var(--panel-2); }
+.plan .row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.plan .row input { font-weight: 600; font-family: var(--mono); }
+.plan label { display: block; font-size: 12px; color: var(--muted); margin: 6px 0 2px; }
+.plan textarea { background: var(--panel); }
+.defaults { border: 1px dashed var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+.defaults dl { margin: 6px 0 8px; font-size: 13px; }
+.defaults dt { font-family: var(--mono); font-weight: 600; }
+.defaults dd { margin: 0 0 6px; color: var(--muted); }
+.notes { display: grid; grid-template-columns: minmax(160px, 240px) 1fr; gap: 6px 12px; align-items: start; }
+.notes .who { padding-top: 7px; font-size: 13px; }
+.notes .who small { display: block; color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.notes input { background: var(--panel-2); }
+.cmd { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.cmd code { flex: 1; font-family: var(--mono); font-size: 12.5px; background: var(--panel-2); border: 1px solid var(--border); padding: 7px 10px; border-radius: 7px; overflow-x: auto; white-space: nowrap; }
+.empty { color: var(--muted); padding: 40px 0; text-align: center; }
+#tip { position: fixed; z-index: 20; pointer-events: none; display: none; width: 280px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25); padding: 10px; font-size: 12.5px; }
+#tip img { width: 100%; border-radius: 6px; display: block; margin-bottom: 8px; }
+#tip .t { white-space: pre-wrap; color: var(--muted); }
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 30; }
+#toast.show { opacity: 1; }
+.guide-ed { min-height: 62vh; font-family: var(--mono); font-size: 13px; line-height: 1.55; }
+@media (max-width: 820px) {
+  .app { grid-template-columns: 1fr; height: auto; }
+  aside { border-right: 0; border-bottom: 1px solid var(--border); }
+  .grid2, .notes { grid-template-columns: 1fr; }
+  .wrap { padding: 12px 16px 60px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Jev Studio <small>Gundam</small></h1>
+    <button class="btn primary" style="width:100%" id="newDeck">+ New meta deck</button>
+    <h2>Decks</h2>
+    <div id="deckList"></div>
+    <h2>Guides</h2>
+    <div id="guideList"></div>
+  </aside>
+  <main><div class="wrap" id="view"><div class="empty">Loading…</div></div></main>
+</div>
+<div id="tip"></div>
+<div id="toast"></div>
+
+<script>
+const $ = (sel, el = document) => el.querySelector(sel);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const cleanText = (s) => String(s ?? "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").trim();
+const TYPES = [["unit", "Units"], ["pilot", "Pilots"], ["command", "Commands"], ["base", "Bases"]];
+const STYLES = ["aggro", "midrange", "control"];
+const cap = (s) => s ? s[0].toUpperCase() + s.slice(1) : s;
+
+let meta = null;
+let decks = [];
+let current = null;   // { kind: "deck", file, form, status } | { kind: "guide", id, markdown }
+let dirty = false;
+let lastCheck = null;
+
+async function api(method, path, data) {
+  const res = await fetch(path, {
+    method,
+    headers: { "content-type": "application/json" },
+    body: data === undefined ? undefined : JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `${res.status} ${res.statusText}`);
+  return json;
+}
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function setDirty(v) {
+  dirty = v;
+  const b = $("#saveBtn"); if (b) b.textContent = v ? "Save •" : "Save";
+}
+
+function confirmLeave() {
+  return !dirty || confirm("You have unsaved changes. Leave without saving?");
+}
+window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+// ---------------------------------------------------------------- sidebar
+
+function renderSidebar() {
+  $("#deckList").innerHTML = decks.length ? decks.map((d) => `
+    <button class="nav-item ${current?.kind === "deck" && current.file === d.file ? "active" : ""}" data-deck="${esc(d.file)}">
+      <span class="dot ${d.ready ? "ok" : ""}" title="${d.ready ? "Ready to play" : "Has problems"}"></span>
+      <span class="grow">${esc(d.name)}</span>
+      ${d.playstyle ? `<span class="tag">${esc(cap(d.playstyle))}</span>` : ""}
+    </button>`).join("") : `<p class="hint" style="margin:4px 8px">No decks yet.</p>`;
+  $("#guideList").innerHTML = meta.guides.map((g) => `
+    <button class="nav-item ${current?.kind === "guide" && current.id === g.id ? "active" : ""}" data-guide="${esc(g.id)}">
+      <span class="grow">${esc(g.title)}</span>
+    </button>`).join("");
+}
+
+document.addEventListener("click", (e) => {
+  const d = e.target.closest("[data-deck]");
+  if (d && confirmLeave()) return openDeck(d.dataset.deck);
+  const g = e.target.closest("[data-guide]");
+  if (g && confirmLeave()) return openGuide(g.dataset.guide);
+});
+$("#newDeck").onclick = () => { if (confirmLeave()) newDeck(); };
+
+async function refreshDecks() { decks = await api("GET", "/api/decks"); renderSidebar(); }
+
+// ---------------------------------------------------------------- deck editor
+
+function emptyForm() {
+  return { name: "", playstyle: "", decklist: "", overview: "", keyPlays: [], plans: [], rules: [
+    "Always take an attack option that says it wins the game.",
+    "If a direct attack on me would lose me the game, block it if any option allows.",
+  ], cardNotes: [] };
+}
+
+function newDeck() {
+  current = { kind: "deck", file: null, form: emptyForm(), status: null };
+  lastCheck = null; setDirty(false); renderDeck(); renderSidebar();
+  $(".topbar .name").focus();
+}
+
+async function openDeck(file) {
+  const data = await api("GET", `/api/decks/${encodeURIComponent(file)}`);
+  lastCheck = null;
+  current = { kind: "deck", file: data.file, form: data.form, status: data.status };
+  setDirty(false); renderDeck(); renderSidebar(); checkNow();
+}
+
+function renderDeck() {
+  const f = current.form;
+  $("#view").innerHTML = `
+    <div class="topbar">
+      <input class="name" id="fName" type="text" placeholder="Deck name, e.g. Red/White Zeon Midrange" value="${esc(f.name)}">
+      <div class="seg" id="fStyle">${["", ...STYLES].map((s) => `<button data-style="${s}" class="${f.playstyle === s ? "on" : ""}">${s ? cap(s) : "None"}</button>`).join("")}</div>
+      <span id="statusPill" class="status"></span>
+      <button class="btn primary" id="saveBtn">Save</button>
+      ${current.file ? `<button class="btn danger" id="delBtn" title="Delete this deck file">Delete</button>` : ""}
+    </div>
+
+    <section class="card">
+      <h3>Decklist</h3>
+      <p class="hint">Paste 50 cards, one per line: <code>4x GD05-111</code>. An optional <code>resource 10 R-001</code> line sets the resource deck (default 10× R-001).</p>
+      <div class="grid2">
+        <textarea id="fDeck" class="mono" rows="18" spellcheck="false" placeholder="4x GD05-111&#10;4x GD01-128&#10;…">${esc(f.decklist)}</textarea>
+        <div>
+          <div class="deckcount" id="deckCount"></div>
+          <div id="deckCards"></div>
+          <ul class="msgs" id="deckMsgs"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Overall strategy</h3>
+      <p class="hint">What the deck wants to do and how it wins. The bot reads this on every decision.</p>
+      <textarea id="fOverview" rows="4" placeholder="Low-curve aggro. Flood the board on turns 1-3, link a pilot onto our best unit at level 4, and break shields before their bigger units take over.">${esc(f.overview)}</textarea>
+    </section>
+
+    <section class="card">
+      <h3>Key plays to look for</h3>
+      <p class="hint">Specific lines, combos and timings. One per line.</p>
+      <textarea id="fKeyPlays" rows="5" placeholder="Level 4: pair Kira onto the unit attacking into a bigger enemy.&#10;Before a lethal swing, bounce their only Blocker with Hawk of Endymion.">${esc(f.keyPlays.join("\n"))}</textarea>
+    </section>
+
+    <section class="card">
+      <h3>Game plans</h3>
+      <p class="hint">At the start of each of its turns the bot picks the plan whose <b>When</b> matches the board, then follows its <b>Do</b>. Optional if a playstyle is chosen.</p>
+      <div id="plans"></div>
+      <button class="btn small" id="addPlan">+ Add plan</button>
+    </section>
+
+    <section class="card">
+      <h3>Rules</h3>
+      <p class="hint">Hard priorities, written as conditions. One per line.</p>
+      <textarea id="fRules" rows="5" placeholder="Hold Hawk of Endymion for their Blocker when they are on 2 shields.">${esc(f.rules.join("\n"))}</textarea>
+    </section>
+
+    <section class="card">
+      <h3>Card notes</h3>
+      <p class="hint">How to use each card. A note is only sent while that card is in the bot's hand or on the board.</p>
+      <div class="notes" id="notes"></div>
+    </section>
+
+    <section class="card" id="playBox"></section>
+  `;
+
+  const onInput = () => { readForm(); setDirty(true); };
+  for (const id of ["fName", "fOverview", "fKeyPlays", "fRules"]) $("#" + id).addEventListener("input", onInput);
+  $("#fDeck").addEventListener("input", () => { onInput(); scheduleCheck(); });
+  $("#fStyle").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-style]"); if (!b) return;
+    current.form.playstyle = b.dataset.style; setDirty(true);
+    for (const x of $("#fStyle").children) x.classList.toggle("on", x === b);
+    renderPlans();
+  });
+  $("#addPlan").onclick = () => { readForm(); current.form.plans.push({ name: "", when: "", do: "" }); setDirty(true); renderPlans(); };
+  $("#saveBtn").onclick = saveDeck;
+  if ($("#delBtn")) $("#delBtn").onclick = deleteDeck;
+
+  renderPlans(); renderStatus(); renderCheck(); renderPlayBox();
+}
+
+function readForm() {
+  const f = current.form;
+  f.name = $("#fName").value;
+  f.decklist = $("#fDeck").value;
+  f.overview = $("#fOverview").value;
+  f.keyPlays = $("#fKeyPlays").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  f.rules = $("#fRules").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  f.plans = [...document.querySelectorAll(".plan[data-i]")].map((el) => ({
+    name: $(".pName", el).value, when: $(".pWhen", el).value, do: $(".pDo", el).value,
+  }));
+  const notes = [];
+  for (const el of document.querySelectorAll("[data-note]")) {
+    if (el.value.trim()) notes.push({ card: el.dataset.note, note: el.value.trim() });
+  }
+  for (const row of document.querySelectorAll(".noteExtra")) {
+    const card = $(".nCard", row).value.trim(); const note = $(".nNote", row).value.trim();
+    if (card && note) notes.push({ card, note });
+  }
+  f.cardNotes = notes;
+}
+
+function renderPlans() {
+  const f = current.form;
+  const box = $("#plans");
+  let html = "";
+  if (f.plans.length === 0 && f.playstyle && meta.playstyles[f.playstyle]) {
+    const defs = meta.playstyles[f.playstyle].plans;
+    html += `<div class="defaults">
+      <b>Using the ${esc(cap(f.playstyle))} guide's default plans.</b> Add your own plans to replace them.
+      <dl>${Object.entries(defs).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+      <button class="btn small" id="copyDefaults">Copy these into the deck to edit</button>
+    </div>`;
+  } else if (f.plans.length === 0) {
+    html += `<p class="hint" style="color:var(--bad)">Choose a playstyle or add at least one plan.</p>`;
+  }
+  html += f.plans.map((p, i) => `
+    <div class="plan" data-i="${i}">
+      <div class="row">
+        <input type="text" class="pName" placeholder="plan_name, e.g. close_the_game" value="${esc(p.name)}">
+        <button class="btn small danger pDel" title="Remove plan">Remove</button>
+      </div>
+      <label>When</label>
+      <textarea class="pWhen" rows="2" placeholder="the opponent has 2 or fewer shields and no base">${esc(p.when)}</textarea>
+      <label>Do</label>
+      <textarea class="pDo" rows="3" placeholder="send everything at the opponent; remove their Blocker first">${esc(p.do)}</textarea>
+    </div>`).join("");
+  box.innerHTML = html;
+  box.querySelectorAll(".plan input, .plan textarea").forEach((el) => el.addEventListener("input", () => { readForm(); setDirty(true); }));
+  box.querySelectorAll(".pDel").forEach((b) => b.onclick = () => {
+    readForm(); current.form.plans.splice(Number(b.closest(".plan").dataset.i), 1); setDirty(true); renderPlans();
+  });
+  const cd = $("#copyDefaults");
+  if (cd) cd.onclick = () => {
+    readForm();
+    current.form.plans = Object.entries(meta.playstyles[f.playstyle].plans).map(([name, text]) => {
+      const m = /^when:\s*(.*?)\s*do:\s*(.*)$/i.exec(text);
+      return m ? { name, when: m[1], do: m[2] } : { name, when: "", do: text };
+    });
+    setDirty(true); renderPlans();
+  };
+}
+
+function renderStatus() {
+  const pill = $("#statusPill"); if (!pill) return;
+  const s = current.status;
+  if (!current.file) { pill.className = "status"; pill.textContent = "Not saved yet"; return; }
+  if (!s) { pill.className = "status"; pill.textContent = ""; return; }
+  pill.className = "status " + (s.ready ? "ok" : "bad");
+  pill.textContent = s.ready ? "✓ Ready to play" : `${s.problems.length} problem${s.problems.length === 1 ? "" : "s"}`;
+  pill.title = s.problems.join("\n");
+}
+
+let checkTimer = null;
+function scheduleCheck() { clearTimeout(checkTimer); checkTimer = setTimeout(checkNow, 300); }
+async function checkNow() {
+  if (current?.kind !== "deck") return;
+  const text = $("#fDeck")?.value ?? current.form.decklist;
+  try { lastCheck = await api("POST", "/api/check-decklist", { decklist: text }); } catch (e) { toast(e.message); }
+  renderCheck();
+}
+
+function colorVar(c) { return c ? `var(--c-${c}, #999)` : "transparent"; }
+
+function renderCheck() {
+  const c = lastCheck;
+  if (!c) { $("#deckCount").innerHTML = ""; $("#deckCards").innerHTML = ""; $("#deckMsgs").innerHTML = ""; renderNotes(); return; }
+  const good = c.total === 50;
+  $("#deckCount").innerHTML = `<strong class="${good ? "ok" : "bad"}">${c.total} / 50</strong>` +
+    c.colors.map((col) => `<span class="colorchip"><span class="cdot" style="background:${colorVar(col)}"></span>${esc(col)}</span>`).join("") +
+    (c.resource ? `<span class="tag">resources: ${c.resource.count}× ${esc(c.resource.cardNumber)}</span>` : "");
+  const groups = TYPES.map(([t, label]) => [label, c.cards.filter((x) => x.type === t)]);
+  const other = c.cards.filter((x) => !TYPES.some(([t]) => t === x.type));
+  if (other.length) groups.push(["Unknown / other", other]);
+  $("#deckCards").innerHTML = groups.filter(([, list]) => list.length).map(([label, list]) => {
+    const sorted = [...list].sort((a, b) => (a.level ?? 99) - (b.level ?? 99) || String(a.name).localeCompare(String(b.name)));
+    const n = list.reduce((s, x) => s + x.count, 0);
+    return `<div class="typegroup"><h4>${esc(label)} · ${n}</h4>${sorted.map((x) => `
+      <div class="cardrow ${x.name ? "" : "unknown"}" data-card="${esc(x.cardNumber)}">
+        <span class="n">${x.count}×</span>
+        <span class="cdot" style="background:${colorVar(x.color)}"></span>
+        <span><span class="nm">${esc(x.name ?? "Unknown card")}</span><span class="num">${esc(x.cardNumber)}</span></span>
+        <span class="meta">${x.level != null ? `Lv${x.level} · ${x.cost}c` : ""}${x.ap != null ? ` · ${x.ap}/${x.hp}` : ""}</span>
+      </div>`).join("")}</div>`;
+  }).join("");
+  $("#deckMsgs").innerHTML = [...c.errors.map((m) => `<li class="e">✕ ${esc(m)}</li>`), ...c.warnings.map((m) => `<li class="w">! ${esc(m)}</li>`)].join("");
+  renderNotes();
+}
+
+function renderNotes() {
+  const box = $("#notes"); if (!box) return;
+  if (document.querySelector("[data-note], .noteExtra")) readForm();
+  const notes = current.form.cardNotes;
+  const byKey = new Map(notes.map((n) => [n.card.toLowerCase(), n.note]));
+  const cards = (lastCheck?.cards ?? []).filter((x) => x.name);
+  const used = new Set();
+  let html = cards.map((x) => {
+    const key = x.cardNumber.toLowerCase();
+    const nameKey = x.name.toLowerCase();
+    const note = byKey.get(key) ?? byKey.get(nameKey) ?? "";
+    used.add(key); used.add(nameKey);
+    return `<div class="who" data-card="${esc(x.cardNumber)}">${esc(x.name)}<small>${esc(x.cardNumber)}${x.link ? ` · link ${esc(x.link)}` : ""}</small></div>
+      <input type="text" data-note="${esc(x.cardNumber)}" value="${esc(note)}" placeholder="When to play it, what to target, what to pair it with">`;
+  }).join("");
+  const extras = notes.filter((n) => !used.has(n.card.toLowerCase()));
+  html += extras.map((n) => `
+    <div class="noteExtra" style="display:contents">
+      <input type="text" class="nCard" value="${esc(n.card)}" title="Card number or name (not in the decklist)">
+      <input type="text" class="nNote" value="${esc(n.note)}">
+    </div>`).join("");
+  if (!html) html = `<p class="hint" style="grid-column:1/-1">Card notes appear here once the decklist has cards.</p>`;
+  box.innerHTML = html;
+  box.querySelectorAll("input").forEach((el) => el.addEventListener("input", () => { readForm(); setDirty(true); }));
+}
+
+function renderPlayBox() {
+  const box = $("#playBox");
+  if (!current.file) { box.innerHTML = `<h3>Play against it</h3><p class="hint">Save the deck to get the commands.</p>`; return; }
+  const p = `jev-decks/${current.file}`;
+  const cmds = [
+    ["Play against it (your deck: a built-in id or a decklist .txt/.md)", `pnpm jev:play --opponent ${p} --my-deck gd01-mixed --show-plan`],
+    ["Test it against a built-in bot", `pnpm jev:bench --deck ${p} --vs combat-aware --vs-deck gd01-mixed --matches 10 --verbose`],
+  ];
+  box.innerHTML = `<h3>Play against it</h3><p class="hint">Run these in a terminal in <code>submodules/gundam/tools/bot-bench</code>.</p>` +
+    cmds.map(([label, c]) => `<p class="hint" style="margin:8px 0 4px">${esc(label)}</p><div class="cmd"><code>${esc(c)}</code><button class="btn small" data-copy="${esc(c)}">Copy</button></div>`).join("");
+  box.querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast("Copied"); } catch { toast("Copy failed; select the text instead"); }
+  });
+}
+
+async function saveDeck() {
+  readForm();
+  const f = current.form;
+  if (!f.name.trim()) { toast("Give the deck a name first"); $("#fName").focus(); return; }
+  try {
+    const data = current.file
+      ? await api("PUT", `/api/decks/${encodeURIComponent(current.file)}`, f)
+      : await api("POST", "/api/decks", f);
+    current = { kind: "deck", file: data.file, form: data.form, status: data.status };
+    setDirty(false); await refreshDecks(); renderDeck(); checkNow();
+    toast(data.status.ready ? "Saved, ready to play" : "Saved (still has problems)");
+  } catch (e) { toast("Save failed: " + e.message); }
+}
+
+async function deleteDeck() {
+  if (!confirm(`Delete jev-decks/${current.file}? This removes the file.`)) return;
+  await api("DELETE", `/api/decks/${encodeURIComponent(current.file)}`);
+  setDirty(false); current = null; await refreshDecks(); showHome();
+}
+
+// ---------------------------------------------------------------- guides
+
+async function openGuide(id) {
+  const data = await api("GET", `/api/guides/${id}`);
+  current = { kind: "guide", id, markdown: data.markdown };
+  setDirty(false); renderSidebar();
+  const isStyle = STYLES.includes(id);
+  $("#view").innerHTML = `
+    <div class="topbar">
+      <div class="name" style="border:0">${esc(meta.guides.find((g) => g.id === id)?.title ?? id)}</div>
+      <button class="btn primary" id="saveBtn">Save</button>
+    </div>
+    <section class="card">
+      <p class="hint">${isStyle
+        ? `Sent to the bot for every deck set to <b>${esc(cap(id))}</b>. Everything above <code>## Game plans</code> is the guide. The <code>### plan_name</code> sections under it are the default plans for decks with none of their own; write them as <code>When: … Do: …</code>.`
+        : `Sent to the bot for every deck, on every decision. Keep it to rules and fundamentals; deck-specific advice belongs in the deck.`}
+        Saved to <code>jev-guides/${esc(id)}.md</code>.</p>
+      <textarea id="gText" class="guide-ed" spellcheck="true">${esc(data.markdown)}</textarea>
+    </section>`;
+  $("#gText").addEventListener("input", () => setDirty(true));
+  $("#saveBtn").onclick = saveGuide;
+}
+
+async function saveGuide() {
+  try {
+    const data = await api("PUT", `/api/guides/${current.id}`, { markdown: $("#gText").value });
+    current.markdown = data.markdown; setDirty(false);
+    meta = await api("GET", "/api/meta"); renderSidebar();
+    const n = Object.keys(data.guide.plans).length;
+    toast(n ? `Saved (${n} default plans)` : "Saved");
+  } catch (e) { toast("Save failed: " + e.message); }
+}
+
+// ---------------------------------------------------------------- misc
+
+function showHome() {
+  renderSidebar();
+  $("#view").innerHTML = `<div class="empty"><p>Pick a deck on the left, or make a new one.</p>
+    <p class="hint">Each deck is saved as a Markdown file in <code>jev-decks/</code>, and the bot reads it from there.</p></div>`;
+}
+
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    if (current?.kind === "deck") saveDeck(); else if (current?.kind === "guide") saveGuide();
+  }
+});
+
+// Card hover preview
+const tip = $("#tip");
+document.addEventListener("mouseover", (e) => {
+  const row = e.target.closest("[data-card]");
+  const card = row && lastCheck?.cards.find((c) => c.cardNumber === row.dataset.card);
+  if (!card || !card.name) { tip.style.display = "none"; return; }
+  tip.innerHTML = `${card.imageUrl ? `<img src="${esc(card.imageUrl)}" alt="" loading="lazy">` : ""}
+    <b>${esc(card.name)}</b> <span class="tag">${esc(card.cardNumber)}</span>
+    <div class="t">${esc(cleanText(card.text) || "No card text.")}${card.link ? `\nLink: ${esc(card.link)}` : ""}</div>`;
+  tip.style.display = "block";
+});
+document.addEventListener("mousemove", (e) => {
+  if (tip.style.display !== "block") return;
+  const w = 290, h = tip.offsetHeight;
+  const x = e.clientX + 18 + w > innerWidth ? e.clientX - w - 12 : e.clientX + 18;
+  const y = Math.max(8, Math.min(e.clientY - 40, innerHeight - h - 8));
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+
+(async () => {
+  try {
+    meta = await api("GET", "/api/meta");
+    await refreshDecks();
+    if (decks[0]) openDeck(decks[0].file); else showHome();
+  } catch (e) {
+    $("#view").innerHTML = `<div class="empty">Could not reach the studio server: ${esc(e.message)}</div>`;
+  }
+})();
+</script>
+</body>
+</html>

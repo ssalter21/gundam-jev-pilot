@@ -62,8 +62,8 @@ export interface PilotStats {
 
 const ACTION_INSTRUCTIONS =
   "You are piloting the deck described in this state in the Gundam Card Game. " +
-  "Pick the single best legal action to take right now. Follow the current game plan, the deck's rules " +
-  "and the card notes. All numbers and combat results in the state and in the options are already " +
+  "Pick the single best legal action to take right now. Follow the current game plan, the deck's rules, " +
+  "key plays and card notes; use the playstyle guide and game guide for anything they don't cover. All numbers and combat results in the state and in the options are already " +
   "calculated by the game engine and are correct: trust them rather than re-deriving them. " +
   "Never throw away a winning attack; never leave yourself dead on board if an option prevents it.";
 
@@ -227,9 +227,12 @@ export class JevPilot {
 
   private buildState(ctx: CandidateStrategyContext, board: JsonValue): JsonValue {
     const plan = this.currentPlan;
+    const n = this.notes;
     return {
-      deck: this.notes.name,
-      deck_overview: this.notes.overview,
+      deck: n.name,
+      ...(n.playstyle ? { playstyle: n.playstyle } : {}),
+      deck_overview: n.overview,
+      ...(n.keyPlays.length > 0 ? { key_plays: [...n.keyPlays] } : {}),
       current_game_plan: plan
         ? {
             name: plan.id,
@@ -242,6 +245,8 @@ export class JevPilot {
       card_notes: this.relevantCardNotes(ctx),
       recent_events: [...this.events],
       board,
+      ...(n.playstyleGuide ? { playstyle_guide: n.playstyleGuide } : {}),
+      ...(n.gameGuide ? { game_guide: n.gameGuide } : {}),
     };
   }
 

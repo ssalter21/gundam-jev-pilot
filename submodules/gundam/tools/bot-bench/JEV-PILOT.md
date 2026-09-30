@@ -7,7 +7,10 @@ Jev (TypeSafe's System One model) makes each decision as a Choice over the legal
 ## How it works
 
 For every decision the bot sends Jev:
-- the deck's overview, all its game plans, its rules, and notes for the cards currently visible
+- the deck's overview (overall strategy), key plays, all its game plans, its rules, and notes for the
+  cards currently visible
+- the playstyle guide for the deck's playstyle (`jev-guides/aggro.md`, `midrange.md`, `control.md`)
+  and the general how-to-play guide (`jev-guides/how-to-play.md`)
 - the **current game plan** and the turn it started (this is the multi-turn memory)
 - the last ~14 things that happened (both players)
 - the board, with every number already worked out by the engine: effective AP, HP left, shields,
@@ -28,7 +31,7 @@ Jev never sees your hand or your deck order.
 Needs Node 22.18+ (you have 24) and pnpm 10.33 via corepack. From the repo root in PowerShell:
 
 ```powershell
-corepack enable
+corepack enable            # needs an admin terminal; if it fails, write "corepack pnpm" wherever this says "pnpm"
 corepack prepare pnpm@10.33.0 --activate
 cd submodules\gundam
 $env:CI = "1"; pnpm install --frozen-lockfile; Remove-Item Env:CI
@@ -52,6 +55,25 @@ that folder. Sanity check first:
 ```powershell
 pnpm jev:check      # expect: identical games: 20/20
 ```
+
+## Write decks in the studio (web UI)
+
+```sh
+pnpm jev:studio      # then open http://localhost:4747
+```
+
+- **New meta deck**: name it, pick a playstyle (Aggro / Midrange / Control), paste the 50 cards as
+  `4x GD05-111` lines. The list is checked as you type: card names, 50 cards, max 4 copies,
+  at most 2 colours. Hover a card to see its image and text.
+- Fill in the overall strategy, key plays, rules and per-card notes. Game plans are optional when a
+  playstyle is set: the deck then uses that playstyle's default plans, or you can copy them in and edit them.
+- Save (Ctrl+S) writes `jev-decks/<name>.md`. The green dot means the pilot can load it. The page
+  shows the command to play against it.
+- **Guides**: edit the how-to-play guide and the three playstyle guides. They're sent to the bot
+  on every decision (together about 1,500 tokens per call), so keep them to what changes decisions.
+
+The studio only listens on this machine (127.0.0.1). The `.md` files are the real data; editing them
+by hand works too.
 
 ## Play against it
 
@@ -85,7 +107,7 @@ should get the Jev pilot at or above `combat-aware`.
 
 ## Writing a meta deck file
 
-Copy `jev-decks/TEMPLATE.md`. `jev-decks/seed-aggro.md` is a worked example. The quality of the
+Use the studio, or copy `jev-decks/TEMPLATE.md`. `jev-decks/seed-aggro.md` is a worked example. The quality of the
 opponent comes almost entirely from the plans and rules: write them as conditions and priorities,
 the way you'd coach a newer player on the deck.
 
@@ -98,6 +120,9 @@ Workflow that works well:
 ## Files
 
 - `src/jev/deck-notes.ts`: reads the deck `.md` files
+- `src/jev/guides.ts`: reads `jev-guides/*.md` (how-to-play + playstyle guides and their default plans)
+- `src/jev/deck-form.ts`: studio form ⇄ deck Markdown, decklist check against the card database
+- `scripts/jev-studio.ts` + `studio/index.html`: the web UI (`pnpm jev:studio`)
 - `src/jev/describe.ts`: board and moves to plain English, all maths done here
 - `src/jev/client.ts`: Jev HTTP client (`POST /v1/systemone`) and the offline mock
 - `src/jev/pilot.ts`: the bot: plan memory, event history, the two Jev questions, fallback

@@ -1,5 +1,8 @@
 # SEED Aggro (ST04 example)
 
+## Playstyle
+Aggro
+
 ## Decklist
 4 ST04-004   # Moebius
 4 ST04-008   # Ginn
@@ -21,6 +24,13 @@ Low-curve aggro. Flood the board with cheap units on turns 1-3, pair Kira or Ath
 Strike Gundam or Aegis from level 4, and push shields fast before the opponent's bigger
 units take over. Tempo commands (Hawk of Endymion bounce, Magic Bullet first strike) clear
 the one blocker that stands between us and a lethal swing.
+
+## Key plays
+- Level 4+: pair Kira onto the unit about to attack into a bigger enemy unit; the -2 AP on the enemy turns a losing fight into a win.
+- Level 4+: pair Athrun to let a unit attack an active enemy unit (Lv5 or lower), e.g. their Blocker before a big swing.
+- Aegis kills an enemy unit and Breach 3 breaks a shield in the same attack: aim it at units it can destroy.
+- Before a lethal swing, Hawk of Endymion their only Blocker, then attack with everything.
+- Magic Bullet of Dusk on a Lv2-or-lower attacker to kill a bigger enemy unit and survive.
 
 ## Game plans
 

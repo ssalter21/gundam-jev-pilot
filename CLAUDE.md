@@ -14,7 +14,14 @@ This repo is a sparse clone of TheCardGoat/tcg-engines (MIT). Only `submodules/g
   directly). Avoid editing engine packages; build on the public API from `@tcg/gundam-engine`.
 - `submodules/gundam/tools/bot-bench/` — upstream self-play bench. **All our code lives here:**
   - `JEV-PILOT.md` — user-facing README: setup, commands, deck file format. Keep it current.
-  - `src/jev/deck-notes.ts` — parses `jev-decks/*.md` (decklist, overview, `### plan` sections, rules, card notes)
+  - `src/jev/deck-notes.ts` — parses `jev-decks/*.md` (decklist, playstyle, overview, key plays, `### plan`
+    sections, rules, card notes). `loadDeckNotes` attaches the guides and, if the deck has no plans, its
+    playstyle guide's default plans.
+  - `src/jev/guides.ts` — `jev-guides/how-to-play.md` + `aggro.md` / `midrange.md` / `control.md`. Text above
+    `## Game plans` is sent to Jev as `game_guide` / `playstyle_guide`; `###` plans below are defaults.
+  - `src/jev/deck-form.ts` — studio form ⇄ Markdown (`markdownToForm`/`formToMarkdown`), `checkDecklist`
+    (card catalog lookup, 50 cards, ≤4 copies, ≤2 colours)
+  - `scripts/jev-studio.ts` + `studio/index.html` — local web UI (`pnpm jev:studio`, 127.0.0.1:4747), vanilla JS, no build
   - `src/jev/describe.ts` — engine state and legal moves → plain English. All arithmetic lives here
     (effective AP/HP via `combatUnitValue`, attack results via `combatOutcome`), because Jev is weak
     at maths/counting. `describeEvent` gives perspective-neutral history lines.
@@ -27,9 +34,11 @@ This repo is a sparse clone of TheCardGoat/tcg-engines (MIT). Only `submodules/g
   - `scripts/jev-play.ts` (terminal human vs bot), `scripts/jev-bench.ts` (bot vs built-in bots),
     `scripts/jev-equivalence-check.ts` (plumbing test)
   - `jev-decks/` — `TEMPLATE.md`, `seed-aggro.md` example
+  - `jev-guides/` — how-to-play and playstyle guides
 
 ## Commands (run in `submodules/gundam/tools/bot-bench`)
 
+- `pnpm jev:studio` — deck/guide editor at http://localhost:4747
 - `pnpm jev:check` — must print `identical games: 20/20`. Run after any change to describe/pilot/loop.
 - `pnpm jev:bench --deck jev-decks/seed-aggro.md --vs combat-aware --vs-deck gd01-mixed --matches 10 [--mock] [--verbose] [--dump reports/req.jsonl]`
 - `pnpm jev:play --opponent jev-decks/seed-aggro.md --my-deck gd01-mixed [--show-plan] [--seed x]`
@@ -38,12 +47,15 @@ This repo is a sparse clone of TheCardGoat/tcg-engines (MIT). Only `submodules/g
   `agnostic-simulator` are upstream and expected; there should be none in `src/jev` or `scripts/jev-*`)
 
 First-time setup is in `JEV-PILOT.md` (corepack pnpm 10.33, `pnpm install` in `submodules/gundam`).
+On this machine `corepack enable` fails without admin; use `corepack pnpm <cmd>`.
 
 ## Invariants
 
 - The pilot must only return candidates from `ctx.candidates`; the engine validates every move.
 - Never send Jev hidden info (opponent hand, deck order). `describeBoard` uses the player's filtered view.
 - Concede is never offered to Jev. Passing-only moments are skipped without a Jev call.
+- The deck `.md` files are the source of truth; the studio must round-trip them (`formToMarkdown(markdownToForm(md))`
+  loads to the same plans/rules/notes/decklist).
 - Keep numbers out of Jev's job: if a decision needs a count or comparison, compute it in `describe.ts`.
 
 ## Status and next steps

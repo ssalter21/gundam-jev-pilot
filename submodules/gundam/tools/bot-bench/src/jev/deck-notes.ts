@@ -9,10 +9,16 @@
  *   4 GD01-008          (also accepts "4x GD01-008", "GD01-008 x4", "GD01-008x4")
  *   resource 10 R-001   (optional; defaults to 10x R-001)
  *
- *   ## Overview
- *   Free text.
+ *   ## Playstyle
+ *   Aggro | Midrange | Control   (optional; adds that guide from jev-guides/)
  *
- *   ## Game plans
+ *   ## Overview
+ *   Free text: the deck's overall strategy.
+ *
+ *   ## Key plays
+ *   - One specific play or line to look for per bullet.
+ *
+ *   ## Game plans                (optional if Playstyle is set: its guide's plans are used)
  *   ### plan_id
  *   Free text: when this plan applies and what it does.
  *
@@ -27,15 +33,25 @@ import { readFileSync } from "node:fs";
 
 import type { DeckList } from "@tcg/gundam-engine";
 
+import { isPlaystyle, loadGuide, planIdFromHeading, PLAYSTYLES, type Playstyle } from "./guides.ts";
+
 export interface DeckNotes {
   readonly name: string;
   readonly deck: DeckList;
+  readonly playstyle: Playstyle | null;
   readonly overview: string;
+  readonly keyPlays: readonly string[];
   /** plan id → plain-English description. Order preserved. */
   readonly plans: Readonly<Record<string, string>>;
   readonly rules: readonly string[];
   /** Card number or card name (case-insensitive key) → note. */
   readonly cardNotes: Readonly<Record<string, string>>;
+  /** True when the plans came from the playstyle guide, not the deck file. */
+  readonly plansFromGuide?: boolean;
+  /** jev-guides/how-to-play.md text, attached by loadDeckNotes. */
+  readonly gameGuide?: string;
+  /** jev-guides/<playstyle>.md text (without its plans), attached by loadDeckNotes. */
+  readonly playstyleGuide?: string;
 }
 
 const DECK_LINE = [
@@ -43,7 +59,7 @@ const DECK_LINE = [
   /^([A-Z0-9]+-[A-Z0-9]+)\s*x\s*(\d+)$/i, // "GD01-008 x4", "GD01-008x4"
 ];
 
-function parseDeckLine(line: string): { cardNumber: string; count: number } | null {
+export function parseDeckLine(line: string): { cardNumber: string; count: number } | null {
   const trimmed = line.replace(/^[-*]\s*/, "").replace(/\s*#.*$/, "").trim();
   if (!trimmed) return null;
   const a = DECK_LINE[0]!.exec(trimmed);
@@ -53,7 +69,7 @@ function parseDeckLine(line: string): { cardNumber: string; count: number } | nu
   return null;
 }
 
-function splitSections(markdown: string, level: "##" | "###"): Map<string, string> {
+export function splitSections(markdown: string, level: "##" | "###"): Map<string, string> {
   const out = new Map<string, string>();
   const marker = `${level} `;
   let current: string | null = null;
@@ -80,17 +96,14 @@ function bullets(text: string): string[] {
     .map((l) => l.replace(/^[-*]\s+/, "").trim());
 }
 
-function toPlanId(heading: string): string {
-  return heading
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_|_$/g, "");
-}
-
 export function parseDeckNotes(
   markdown: string,
   source = "deck notes",
-  options: { requirePlans?: boolean } = {},
+  options: {
+    requirePlans?: boolean;
+    /** Plans to use when the file has none (normally the playstyle guide's). */
+    fallbackPlans?: (playstyle: Playstyle) => Record<string, string>;
+  } = {},
 ): DeckNotes {
   markdown = markdown.replace(/<!--[\s\S]*?-->/g, "");
   const title = /^#\s+(.+)$/m.exec(markdown)?.[1]?.trim() ?? "Unnamed deck";
@@ -124,14 +137,28 @@ export function parseDeckNotes(
     throw new Error(`${source}: decklist has ${total} cards; a Gundam deck needs exactly 50.`);
   }
 
+  // Playstyle
+  const playstyleText = get("playstyle").trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+  if (playstyleText && !isPlaystyle(playstyleText)) {
+    throw new Error(`${source}: playstyle "${playstyleText}" must be one of ${PLAYSTYLES.join(", ")}.`);
+  }
+  const playstyle = playstyleText ? (playstyleText as Playstyle) : null;
+
   // Plans
-  const plans: Record<string, string> = {};
+  let plans: Record<string, string> = {};
   for (const [heading, body] of splitSections(get("game plans"), "###")) {
-    const id = toPlanId(heading);
+    const id = planIdFromHeading(heading);
     if (id) plans[id] = body.replace(/\s+/g, " ").trim();
   }
+  let plansFromGuide = false;
+  if (Object.keys(plans).length === 0 && playstyle && options.fallbackPlans) {
+    plans = options.fallbackPlans(playstyle);
+    plansFromGuide = Object.keys(plans).length > 0;
+  }
   if (Object.keys(plans).length === 0 && options.requirePlans !== false) {
-    throw new Error(`${source}: add at least one plan under "## Game plans" as "### plan_name".`);
+    throw new Error(
+      `${source}: add at least one plan under "## Game plans" as "### plan_name", or set a Playstyle to use its default plans.`,
+    );
   }
 
   // Card notes
@@ -145,15 +172,26 @@ export function parseDeckNotes(
   return {
     name: title,
     deck: { name: title, description: `Loaded from ${source}`, cards, resource },
+    playstyle,
     overview: get("overview").replace(/\s+/g, " ").trim(),
+    keyPlays: bullets(get("key plays")),
     plans,
+    plansFromGuide,
     rules: bullets(get("rules")),
     cardNotes,
   };
 }
 
+/** Read a deck file and attach the how-to-play guide and its playstyle guide. */
 export function loadDeckNotes(path: string): DeckNotes {
-  return parseDeckNotes(readFileSync(path, "utf8"), path);
+  const notes = parseDeckNotes(readFileSync(path, "utf8"), path, {
+    fallbackPlans: (p) => ({ ...loadGuide(p).plans }),
+  });
+  return {
+    ...notes,
+    gameGuide: loadGuide("how-to-play").text,
+    playstyleGuide: notes.playstyle ? loadGuide(notes.playstyle).text : undefined,
+  };
 }
 
 /** A plain decklist (.txt, one "4 GD01-008" per line) with no strategy notes. */
